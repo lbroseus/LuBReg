@@ -241,7 +241,6 @@ LocusWiseLM <-
 #' @param expo_cov A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param confounders A character vector containing names of the confounders
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
-#' @param maxit The number of iterations for each robust regression
 #' @param path Path for saving the result file
 #' @param file_name File name without extension
 #' @param meth_data A matrix containing methylation data
@@ -271,9 +270,8 @@ LocusWiseLME <-
            exposures,
            confounders,
            technical_confounders,
-           maxit,
            transformToMvalue = FALSE,
-           ncores = bigstatsr::nb_cores(),
+           ncores = 1,
            expo_labels,
            path,
            file_name) {
@@ -307,7 +305,7 @@ LocusWiseLME <-
         cl = cl,
         X = meth_data,
         MARGIN = 2,
-        FUN = myMLRegressionLoci ,
+        FUN = myMLRegressionLoci,
         exposure = exposures[i],
         expo_cov = expo_cov,
         confounders = confounders,
