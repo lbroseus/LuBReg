@@ -662,6 +662,9 @@ adjustPvalues <- function(result_loci_regr_df, method) {
 #' @param rm_samples IDs of samples to be removed from analyses (eg: spurious ones, outliers)
 #'
 #' @importFrom dplyr filter arrange
+#' 
+#' @export
+#' 
 #' @return A 2-entry list with synchronized data (ie: same samples, matching order)
 #'
 
