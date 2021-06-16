@@ -7,6 +7,10 @@ Authors@R:
            role = c("aut", "cre"),
            email = "first.last@example.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
+Imports: MASS, lme4, GenomicRanges, IRanges, S4Vectors,
+    dplyr, magrittr, minfi, interactions,
+    stats, utils, survey, data.table, broom,
+    IlluminaHumanMethylation450kanno.ilmn12.hg19           
 Description: What the package does (one paragraph).
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
