@@ -136,7 +136,7 @@ twoStageMLM <- function(CpG,
 ################################################################################
 #' Results of the mixed linear regressions for mean methylation level in function of repeated exposure measurements
 #'
-#' @param meth_data A matrix containing methylation data.
+#' @param meth_data A matrix containing methylation data (samples in columns).
 #' @param exposures A character vector naming the exposures.
 #' @param covariates A data.frame containing all variables needed for regression (exposures and confounders).
 #' @param clinical_confounders A character vector containing names of the confounders.
@@ -200,7 +200,7 @@ LocusWiseTwoStageMLM <- function(meth_data,
       result_loci_regr <- parallel::parApply(
         cl = cl,
         X = meth_data,
-        MARGIN = 2,
+        MARGIN = 1,
         FUN = twoStageMLM,
         exposure = exposures[i],
         covariates = covariates,

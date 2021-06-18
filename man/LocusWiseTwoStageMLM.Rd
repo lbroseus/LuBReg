@@ -19,7 +19,7 @@ LocusWiseTwoStageMLM(
 )
 }
 \arguments{
-\item{meth_data}{A matrix containing methylation data.}
+\item{meth_data}{A matrix containing methylation data (samples in columns).}
 
 \item{covariates}{A data.frame containing all variables needed for regression (exposures and confounders).}
 

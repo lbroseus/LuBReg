@@ -2,7 +2,7 @@
 ################################################################################
 #' Results of the linear regressions for mean methylation level in function of exposure 
 #'
-#' @param meth_data A matrix containing methylation data
+#' @param meth_data A matrix containing methylation data (samples in columns).
 #' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param clinical_confounders A character vector containing names of the confounders
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
@@ -65,7 +65,7 @@ LocusWiseLM <-
       result_loci_regr <- parallel::parApply(
         cl = cl,
         X = meth_data,
-        MARGIN = 2,
+        MARGIN = 1,
         FUN = myLinearRegressionLoci,
         exposure = exposures[i],
         covariates = covariates,
@@ -113,12 +113,12 @@ LocusWiseLM <-
 ################################################################################
 #' Results of the mixed linear regressions for mean methylation level in function of repeated exposure measurements
 #'
+#' @param meth_data A matrix containing methylation data (samples in columns).
 #' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param clinical_confounders A character vector containing names of the confounders
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
 #' @param path Path for saving the result file
 #' @param file_name File name without extension
-#' @param meth_data A matrix containing methylation data
 #' @param exposures A character vector naming the exposures
 #' @param ncores The number of cores used for parallel computing, by default all available cores
 #' @param transformToMvalue Boolean: whether input data should be transformed to Mvalue
@@ -177,7 +177,7 @@ LocusWiseLME <-
       result_loci_regr <- parallel::parApply(
         cl = cl,
         X = meth_data,
-        MARGIN = 2,
+        MARGIN = 1,
         FUN = myMLRegressionLoci,
         exposure = exposures[i],
         covariates = covariates,

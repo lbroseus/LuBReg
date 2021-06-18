@@ -76,18 +76,21 @@ RLM <- function(CpG,
     dplyr::rename(conf_low = `2.5 %`, conf_high = `97.5 %`)
   
   # Obtain standard error of the estimate
-  SE <- summary(fit)$coefficients[exposure, "Std. Error"]
+  SE <- summary(fit)$coefficients["exposure", "Std. Error"]
   
   # Obtain estimate
-  Estimate <- fit$coefficients["exposure", "Estimate"]
+  Estimate <- fit$coefficients["exposure"]
+  
+  sfit <- cbind(Estimate, SE, CIs, raw_p_value = as.numeric(wald$p))
   
   if( transformToMvalue ){
+    
     Intercept <- fit$coefficients["(Intercept)", "Estimate"]
+    
     MeanBeta <- m2beta(Intercept+Estimate) - m2beta(Intercept)
+    
     # Combine estimates, CIs and p values
-    sfit <- cbind(MeanBeta, Estimate, SE, CIs, raw_p_value = as.numeric(wald$p))
-  }else{
-    sfit <- cbind(Estimate, SE, CIs, raw_p_value = as.numeric(wald$p))
+    sfit <- cbind(MeanBeta, sfit)
   }
   
   return(sfit)
@@ -96,7 +99,7 @@ RLM <- function(CpG,
 #' Results of the RLMs for mean methylation level in function of exposures.
 #' One exposure at a time.
 #'
-#' @param meth_data A matrix containing methylation data
+#' @param meth_data A matrix containing methylation data (samples in columns).
 #' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param exposures A character vector naming the exposures
 #' @param clinical_confounders A character vector containing names of the confounders
@@ -161,7 +164,7 @@ LocusWiseRLM <-
       result_loci_regr <- parallel::parApply(
         cl = cl,
         X = meth_data,
-        MARGIN = 2,
+        MARGIN = 1,
         FUN = LocusWiseRLM,
         exposure = exposures[i],
         covariates = covariates,
