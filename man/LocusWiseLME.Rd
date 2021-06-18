@@ -6,13 +6,12 @@
 \usage{
 LocusWiseLME(
   meth_data,
-  expo_cov,
+  covariates,
   exposures,
-  confounders,
+  clinical_confounders,
   technical_confounders,
-  maxit,
   transformToMvalue = FALSE,
-  ncores = bigstatsr::nb_cores(),
+  ncores = 1,
   expo_labels,
   path,
   file_name
@@ -21,27 +20,21 @@ LocusWiseLME(
 \arguments{
 \item{meth_data}{A matrix containing methylation data}
 
-\item{expo_cov}{A data.frame containing all variables needed for regression (exposures and confounders)}
+\item{covariates}{A data.frame containing all variables needed for regression (exposures and confounders)}
 
 \item{exposures}{A character vector naming the exposures}
 
-\item{confounders}{A character vector containing names of the confounders}
+\item{clinical_confounders}{A character vector containing names of the confounders}
 
 \item{technical_confounders}{A character vector defining technical confounders the regression will be adjusted to}
-
-\item{maxit}{The number of iterations for each robust regression}
 
 \item{transformToMvalue}{Boolean: whether input data should be transformed to Mvalue}
 
 \item{ncores}{The number of cores used for parallel computing, by default all available cores}
 
-\item{expo_labels}{A character vector containing full names of exposures}
-
 \item{path}{Path for saving the result file}
 
 \item{file_name}{File name without extension}
-
-\item{annotation_object}{An Illumina object used to annotate files}
 }
 \value{
 A data.frame with annotated statistics for each CpG: beta estimate for the association with exposure; uncorrected and corrected p values; average mean meth level with SE;

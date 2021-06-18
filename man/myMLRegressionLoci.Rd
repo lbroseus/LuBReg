@@ -7,7 +7,7 @@
 myMLRegressionLoci(
   CpG,
   exposure,
-  expo_cov,
+  covariates,
   confounders = 0,
   technical_confounders = 0,
   transformToMvalue = transformToMvalue
@@ -18,7 +18,7 @@ myMLRegressionLoci(
 
 \item{exposure}{A character string with the exposure name}
 
-\item{expo_cov}{A data.frame containing all variables needed for regression (exposures and confounders)}
+\item{covariates}{A data.frame containing all variables needed for regression (exposures and confounders)}
 
 \item{confounders}{A character vector containing names of the confounders}
 

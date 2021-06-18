@@ -10,7 +10,7 @@ multiRobustLinearRegression(
   exposures,
   clinical_confounders = 0,
   technical_confounders = 0,
-  transformToMvalue = transformToMvalue,
+  transformToMvalue = FALSE,
   maxit
 )
 }

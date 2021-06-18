@@ -4,7 +4,7 @@
 \alias{ObtainStatisticsII}
 \title{Obtain regression statistics for multiple effects}
 \usage{
-ObtainStatisticsII(fit, data, exposures)
+ObtainStatisticsII(fit, data, exposures, transformToMvalue)
 }
 \arguments{
 \item{fit}{An object created by MASS:mlr robust linear regression function}

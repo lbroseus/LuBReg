@@ -14,7 +14,7 @@
 #' @param maxit The number of iterations for each robust regression
 #'
 #' @importFrom stats as.formula p.adjust sd
-#' @importFrom tibble column_to_rownames
+#' 
 #' @export
 #'
 #' @return A named vector of p values for regressions for each CpG
@@ -25,7 +25,7 @@ multiRobustLinearRegression <-
            exposures,
            clinical_confounders = 0,
            technical_confounders = 0,
-           transformToMvalue = transformToMvalue,
+           transformToMvalue = FALSE,
            maxit) {
     
     if( transformToMvalue & max(CpG, na.rm = T)<1 & min(CpG, na.rm = T)>0){
@@ -57,13 +57,14 @@ multiRobustLinearRegression <-
         paste(technical_confounders, collapse = " + ")
       ))
     
-    # Fit the robust linear regression for one exposure at a time
-    fit <- myRobustLinearRegression(formula = formula,
-                                    data = data,
-                                    maxit = maxit)
+    # Fit the robust linear regression
+    fit <- MASS::rlm(formula = formula, data = data, maxit = maxit)
     
     # Obtain regression statistics
-    sfit <- ObtainStatisticsII(fit = fit, data = data, exposures = exposures)
+    sfit <- ObtainStatisticsII(fit = fit, 
+                               data = data, 
+                               exposures = exposures,
+                               transformToMvalue = transformToMvalue)
     rownames(sfit) <- NULL
     
     return(sfit)

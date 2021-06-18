@@ -17,23 +17,6 @@ logit2 <- function(p) return( log2(p/(1-p)) )
 m2beta <- function(m) return( 2^m/(2^m + 1) )
 
 ################################################################################
-#' Fit the robust linear regression
-#'
-#' @param formula A formula defining the elements of the regression
-#' @param data A data.frame containing global methylation variable, exposure variables, confounders and technical confounders
-#' @param maxit The number of iterations for each robust regression
-#' @importFrom MASS rlm
-#'
-#' @return An object created by MASS:mlr robust linear regression function
-
-myRobustLinearRegression <- function(formula, data, maxit) {
-  fit <- MASS::rlm(formula = formula,
-                   data = data,
-                   maxit = maxit)
-  return(fit)
-}
-
-################################################################################
 #' Obtain regression statistics for one
 #'
 #'
@@ -108,7 +91,7 @@ myObtainStatistics <- function(fit, data, exposure) {
 #'
 #' @return A data.frame containing results of the regression for one model for one exposure
 
-ObtainStatisticsII <- function(fit, data, exposures){
+ObtainStatisticsII <- function(fit, data, exposures, transformToMvalue){
   
   # Calculate p values using Wald test
   raw_p_value.effect <- tapply(exposures, 
@@ -144,92 +127,34 @@ ObtainStatisticsII <- function(fit, data, exposures){
   )
   
   # Obtain estimates
-  Estimate <- fit$coefficients[exposures]
+  Estimates <- fit$coefficients[exposures]
+  
+  Intercept <- fit$coefficients["(Intercept)"]
+  
+  if( transformToMvalue ){
+    MeanBeta <- tapply(Estimates, 
+                     1:length(exposures),
+                     function(est) m2beta(Intercept+est)-m2beta(Intercept))
+  }
   
   # Obtain standard error of the estimate
   SE <- summary(fit)$coefficients[exposures, "Std. Error"]
   
   # Combine estimates, CIs and p values
-  sfit <-
-    cbind(
-      exposures,
-      Estimate,
-      SE,
-      CIs,
-      Estimate_CI,
-      raw_p_value.effect,
-      raw_p_val.model
-    )
-  
+  if(transformToMvalue){
+    sfit <- cbind(exposures, Estimates, SE, CIs, Estimate_CI,
+                  MeanBeta,
+                  raw_p_value.effect, raw_p_val.model)
+  }else{
+    sfit <- cbind(exposures, Estimates, SE, CIs, Estimate_CI,
+                  raw_p_value.effect, raw_p_val.model)
+  }
   return(sfit)
 }
 
-################################################################################
-#' Run robust linear regression for methylation at specific loci ~ 1 exposure at a time (ExWAS) adjusted for diferent set of confounders
-#'
-#' @param expo_cov A data.frame containing all variables needed for regression (exposures and confounders)
-#' @param exposure A character string with the exposure name
-#' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
-#' @param maxit The number of iterations for each robust regression
-#' @param CpG A numeric vector containing methylation data from 1 CpG
-#' @param confounders A character vector containing names of the confounders
-#'
-#' @importFrom stats as.formula p.adjust sd
-#' @importFrom tibble column_to_rownames
-#'
-#' @return A named vector of p values for regressions for each CpG
-
-myRobustLinearRegressionLoci <-
-  function(CpG,
-           exposure,
-           expo_cov,
-           confounders = 0,
-           technical_confounders = 0,
-           maxit, 
-           transformToMvalue = transformToMvalue) {
-    
-    if( transformToMvalue & max(CpG, na.rm = T)<1 & min(CpG, na.rm = T)>0){
-      CpG <- logit2(CpG)
-    }
-    # Keeping CpG as a matrix will preserve the row names (apply coerces it to numeric vector)
-    CpG <- as.matrix(CpG)
-    
-   
-    # Change the CpG colname name to "y" as it will be used as such in the regression formula
-    colnames(CpG) <- "y"
-    
-    # Change ID to rownames so covariates can be merged with methylation dataset
-    CpG <- data.frame(id = rownames(CpG), CpG)
-
-    if(!("id" %in% colnames(expo_cov)))  expo_cov <- data.frame(id = rownames(expo_cov), expo_cov)
-    # Create a subset of data containing methylation data of one CpG (y) and exposure-covariates data (x)
-    data <- merge(x = expo_cov, y = CpG, by = "id")
-    
-    # Create regression formula
-    formula <-
-      stats::as.formula(paste(
-        "y ~",
-        exposure,
-        "+",
-        paste(confounders, collapse = " + "),
-        "+",
-        paste(technical_confounders, collapse = " + ")
-      ))
-    
-    # Fit the robust linear regression for one exposure at a time
-    fit <- myRobustLinearRegression(formula = formula,
-                                   data = data,
-                                   maxit = maxit)
-    
-    # Obtain regression statistics
-    sfit <- myObtainStatistics(fit = fit, data = data, exposure = exposure)
-    
-    return(sfit)
-  }
-
 #' Run linear regression for methylation at specific loci ~ 1 exposure at a time (ExWAS) adjusted for diferent set of confounders
 #'
-#' @param expo_cov A data.frame containing all variables needed for regression (exposures and confounders)
+#' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param exposure A character string with the exposure name
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
 #' @param maxit The number of iterations for each robust regression
@@ -244,7 +169,7 @@ myRobustLinearRegressionLoci <-
 myLinearRegressionLoci <-
   function(CpG,
            exposure,
-           expo_cov,
+           covariates,
            confounders = 0,
            technical_confounders = 0,
            transformToMvalue = transformToMvalue) {
@@ -261,9 +186,9 @@ myLinearRegressionLoci <-
     # Change ID to rownames so covariates can be merged with methylation dataset
     CpG <- data.frame(id = rownames(CpG), CpG)
     
-    if(!("id" %in% colnames(expo_cov)))  expo_cov <- data.frame(id = rownames(expo_cov), expo_cov)
+    if(!("id" %in% colnames(covariates)))  covariates <- data.frame(id = rownames(covariates), covariates)
     # Create a subset of data containing methylation data of one CpG (y) and exposure-covariates data (x)
-    data <- merge(x = expo_cov, y = CpG, by = "id")
+    data <- merge(x = covariates, y = CpG, by = "id")
     
     # Create regression formula
     formula <-
@@ -293,7 +218,7 @@ myLinearRegressionLoci <-
 ################################################################################
 #' Run Mixed Linear regression for methylation at specific loci ~ 1 exposure at a time (ExWAS) adjusted 
 #'
-#' @param expo_cov A data.frame containing all variables needed for regression (exposures and confounders)
+#' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param exposure A character string with the exposure name
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
 #' @param CpG A numeric vector containing methylation data from 1 CpG
@@ -308,7 +233,7 @@ myLinearRegressionLoci <-
 myMLRegressionLoci <-
   function(CpG,
            exposure,
-           expo_cov,
+           covariates,
            confounders = 0,
            technical_confounders = 0,
            transformToMvalue = transformToMvalue) {
@@ -325,9 +250,9 @@ myMLRegressionLoci <-
     # Change ID to rownames so covariates can be merged with methylation dataset
     CpG <- data.frame(id = rownames(CpG), CpG)
     
-    if(!("id" %in% colnames(expo_cov)))  expo_cov <- data.frame(id = rownames(expo_cov), expo_cov)
+    if(!("id" %in% colnames(covariates)))  covariates <- data.frame(id = rownames(covariates), covariates)
     # Create a subset of data containing methylation data of one CpG (y) and exposure-covariates data (x)
-    data <- merge(x = expo_cov, y = CpG, by = "id")
+    data <- merge(x = covariates, y = CpG, by = "id")
     data <- dplyr::filter(data, !is.na(y))
     
     # Create regression formula
@@ -382,253 +307,6 @@ myMLRegressionLoci <-
   }
 ################################################################################
 
-################################################################################
-#' Run Mixed Linear regression for methylation at specific loci ~ 1 exposure at a time (ExWAS) adjusted 
-#'
-#' @param expo_cov A data.frame containing all variables needed for regression (exposures and confounders)
-#' @param exposure A character string with the exposure name
-#' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
-#' @param CpG A numeric vector containing methylation data from 1 CpG
-#' @param confounders A character vector containing names of the confounders
-#'
-#' @importFrom stats as.formula p.adjust sd
-#' @importFrom lme4 lmer ranef
-#' @importFrom survey regTermTest
-#' @importFrom dplyr filter distinct
-#'
-#' @return A named vector of p values for regressions for each CpG
-
-twoStageMLM <-
-  function(CpG,
-           exposure,
-           expo_cov,
-           confounders = 0,
-           technical_confounders = 0,
-           transformToMvalue = transformToMvalue,
-           maxit = 25){
-    
-    #--------------------------------------------------------------------------#
-    # Prepare data
-    
-    ## If required, transform beta- to M-values
-    if( transformToMvalue & max(CpG, na.rm = T)<1 & min(CpG, na.rm = T)>0){
-      CpG <- logit2(CpG)
-    }
-    ## Keeping CpG as a matrix will preserve the row names 
-    ## (apply coerces it to numeric vector)
-    CpG <- as.matrix(CpG)
-    
-    ## Change the CpG colname to "y" as it will be used as such in the regression formula
-    colnames(CpG) <- "y"
-    
-    ## Change ID to rownames so that covariates and methylation datasets can be merged
-    CpG <- data.frame(id = rownames(CpG), CpG)
-    
-    if(!("id" %in% colnames(expo_cov)))  expo_cov <- data.frame(id = rownames(expo_cov), expo_cov)
-
-    #--------------------------------------------------------------------------#
-    # Two-stage model
-    #--------------------------------------------------------------------------#
-    ## Stage one: mixed model 
-    ## (assuming 'constant' exposure, repeatedly measured)
-    
-    ### ML regression formula: exposure ~ 1 + (1 | id)
-    formula.repeat <- stats::as.formula(paste(exposure, " ~ (1 | id)"))
-    ### Fit mixed linear model
-    fit <- lme4::lmer(formula = formula.repeat, data = expo_cov)
-    ### Gather fixed and random effects
-    fixed <- as.vector(summary(fit)$coefficients["(Intercept)","Estimate"])
-    random <- lme4::ranef(fit)$id
-    ### Compute individual coefficient (pop fixed + indiv random)
-    exposure.estim <- data.frame(id = rownames(random),
-                                 exposure = random$`(Intercept)`+fixed)
-    
-    #--------------------------------------------------------------------------#
-    ## Stage two: multi-linear regression: 
-    ## outcome ~ (exposure.fixed + exposure.random) + confounders
-    
-    ### Create the new data set of covariates
-    expo_cov <- expo_cov %>% dplyr::distinct(id, .keep_all = TRUE)
-    expo_cov <- merge(x = expo_cov, y = CpG, by = "id")
-    expo_cov <- dplyr::filter(expo_cov, !is.na(y))
-    expo_cov <- merge(expo_cov, exposure.estim, by ='id')
-    
-    ### Create regression formula
-    formula.ewas <-
-      stats::as.formula(paste(
-        "y", " ~ exposure + ",
-        paste(confounders, collapse = " + "),
-        "+",
-        paste(technical_confounders, collapse = " + ")
-        ))
-    
-    ### Fit linear regression   
-    fit <- lm(formula = formula.ewas, data = expo_cov)
-    
-    #--------------------------------------------------------------------------#
-    ## Compute estimates
-    
-    ### Calculate 95% CIs
-    suppressMessages(
-      CIs <- stats::confint(object = fit, parm = "exposure", level = 0.95) %>%
-        as.data.frame() %>%
-        dplyr::rename(conf_low = `2.5 %`, conf_high = `97.5 %`)
-    )
-    
-    ### Obtain beta estimates, standard errors, p-values
-    
-    Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
-
-    Estimate <- summary(fit)$coefficients["exposure", "Estimate"]
-    
-    MeanBeta <- abs(m2beta(Intercept) - m2beta(Intercept+Estimate))
-    
-    SE <- summary(fit)$coefficients["exposure", "Std. Error"]
-    
-    pval <- summary(fit)$coefficients["exposure","Pr(>|t|)"]
-    
-    #### Calculate p-value using Wald test and LRT
-    wald <- survey::regTermTest(model = fit,
-                          test.terms = "exposure",
-                          null = NULL,
-                          df = Inf,
-                          method = "Wald")$p
-    
-    fit.rob <- MASS::rlm(formula = formula.ewas, data = expo_cov, maxit = maxit)
-      
-    robust_p_value <- survey::regTermTest(model = fit.rob,
-                                          test.terms = "exposure",
-                                          null = NULL,
-                                          df = Inf,
-                                          method = "Wald")$p
-      
-      sfit <- cbind(Estimate, SE, CIs, 
-                    raw_p_value = wald,
-                    robust_p_value = robust_p_value,
-                    MeanBeta)
-
-    return(sfit)
-  }
-
-################################################################################
-#' Run Mixed Linear regression for methylation at specific loci ~ 1 exposure at a time (ExWAS) adjusted 
-#'
-#' @param expo_cov A data.frame containing all variables needed for regression (exposures and confounders)
-#' @param exposure A character string with the exposure name
-#' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
-#' @param CpG A numeric vector containing methylation data from 1 CpG
-#' @param confounders A character vector containing names of the confounders
-#'
-#' @import ggplot2
-#' @importFrom stats as.formula p.adjust sd
-#' @importFrom jtools center 
-#' @importFrom interactions interact_plot
-#' @importFrom sjPlot plot_model
-#' @importFrom cowplot ggdraw draw_plot draw_plot_label
-#' @importFrom lme4 lmer
-#' @importFrom dplyr filter
-#'
-#' @return A named vector of p values for regressions for each CpG
-
-TimeMLReg <- function(CpG,
-           covariates.df,
-           mainEffect,
-           time,
-           testTimeInteraction = TRUE,
-           threshold.interaction = 0.05,
-           clinical_confounders = 0,
-           technical_confounders = 0,
-           transformToMvalue = transformToMvalue,
-           plot = FALSE, linearity.check = FALSE, plot.points = FALSE){
-    
-    if( transformToMvalue & max(CpG, na.rm = T)<1 & min(CpG, na.rm = T)>0){
-      CpG <- logit2(CpG)
-    }
-  
-    CpG <- jtools::center(CpG)
-    CpG <- as.matrix(CpG)
-    colnames(CpG) <- "y"
-    CpG <- data.frame(id = rownames(CpG), CpG)
-    
-    if(!("id" %in% colnames(covariates.df)))  covariates.df <- data.frame(id = rownames(covariates.df), 
-                                                                          covariates.df)
-    # Create a subset of data containing methylation data of one CpG (y) and exposure-covariates data (x)
-    data <- merge(x = covariates.df, y = CpG, by = "id")
-    data <- dplyr::filter(data, !is.na(y))
-    
-    # Create regression formulae
-    formula0 <-
-      stats::as.formula(paste(
-        mainEffect, " ~ ",
-        time, "+",
-        paste(clinical_confounders, collapse = " + "),
-        "+",
-        paste(technical_confounders, collapse = " + "),
-        " + (1 | id)"
-      ))
-    fit0 <- myMLRegression(formula = formula0, data = data)
-    
-    #With mainEffect
-    formula1 <-
-      stats::as.formula(paste(
-        mainEffect, " ~ ",
-        " y ", "+", time, "+", 
-        paste(clinical_confounders, collapse = " + "),
-        "+",
-        paste(technical_confounders, collapse = " + "),
-        " + (1 | id)"
-      ))
-    fit1 <- myMLRegression(formula = formula1, data = data)
-    
-    #With interaction term mainEffect*Time
-    formula2 <-
-      stats::as.formula(paste(
-        mainEffect, " ~ ",
-        " y ", "*", time, "+", 
-        paste(clinical_confounders, collapse = " + "),
-        "+",
-        paste(technical_confounders, collapse = " + "),
-        " + (1 | id)"
-      ))
-    fit2 <- myMLRegression(formula = formula2, data = data)
-    
-    LRT1 <- anova(fit1,fit2)
-    pval1 <- as.numeric(LRT1$`Pr(>Chisq)`[2])
-    
-    LRT0 <- anova(fit0,fit1)
-    pval0 <- as.numeric(LRT0$`Pr(>Chisq)`[2])
-    
-    sfit <- data.frame(Estimate.interaction = summary(fit2)$coefficients[paste0("y:",time), "Estimate"],
-                  Estimate.y2 = summary(fit2)$coefficients["y", "Estimate"],
-                  Pval.interaction = pval1,
-                  Estimate.y =  summary(fit1)$coefficients["y", "Estimate"],
-                  Pval.y = pval0)
-    
-    if( plot ){
-      if(pval1<threshold.interaction){
-        pMod <- sjPlot::plot_model(fit2, terms = c("y", time, clinical_confounders, paste0("y:",time))) +
-          theme_minimal()
-        p1 <- interactions::interact_plot(fit2, pred = !!time, modx = "y",
-                                         linearity.check = TRUE, plot.points = TRUE) 
-        p2 <- interactions::interact_plot(fit2, pred = !!time, modx = "y") 
-     
-        p <- ggdraw() +
-          draw_plot(pMod, 0, 0.5, .5, .5) +
-          draw_plot(p2, .5, 0.5, .5, .5) +
-          draw_plot(p1, 0, 0, 1, 0.5) +
-          draw_plot_label(c("A", "B", "C"), c(0, 0.5, 0), c(1, 1, 0.5), size = 15) 
-        
-        print( p )
-        
-      }else{
-        pMod <- sjPlot::plot_model(fit1, c("y", time, clinical_confounders))
-        print( pMod )
-      }
-    }
-
-    
-    return( sfit )
-}
 
 ################################################################################
 #' Adjust p values for multiple testing
@@ -666,7 +344,6 @@ adjustPvalues <- function(result_loci_regr_df, method) {
 #' @export
 #' 
 #' @return A 2-entry list with synchronized data (ie: same samples, matching order)
-#'
 
 synchronizeDatasets <- function(mmList, rm_samples = NULL){
   
