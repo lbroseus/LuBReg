@@ -11,6 +11,7 @@ twoStageMLM(
   clinical_confounders = 0,
   technical_confounders = 0,
   transformToMvalue = transformToMvalue,
+  robust = TRUE,
   maxit = 25
 )
 }
@@ -27,9 +28,9 @@ twoStageMLM(
 
 \item{transformToMvalue}{Boolean: whether input data should be transformed to M-value}
 
-\item{maxit}{The number of iterations for each robust regression}
-
 \item{robust}{Boolean. Whether to perform robust linear regressions in the second stage. Default: TRUE.}
+
+\item{maxit}{The number of iterations for each robust regression}
 }
 \value{
 A named vector of p values for regressions for each CpG

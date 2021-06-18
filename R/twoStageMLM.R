@@ -23,6 +23,7 @@ twoStageMLM <- function(CpG,
                         clinical_confounders = 0,
                         technical_confounders = 0,
                         transformToMvalue = transformToMvalue,
+                        robust = TRUE,
                         maxit = 25){
     
     #--------------------------------------------------------------------------#
@@ -86,52 +87,46 @@ twoStageMLM <- function(CpG,
       
       fit <- MASS::rlm(formula = formula.ewas, data = covariates, maxit = maxit)
       
-      Intercept <- fit$coefficients["(Intercept)", "Estimate"]
+      Intercept <- fit$coefficients["(Intercept)"]
       
-      Estimate <- fit$coefficients["exposure", "Estimate"]
+      Estimate <- fit$coefficients["exposure"] %>% as.numeric()
       
-      #### Calculate p-value using Wald test 
-      raw_p_value <- survey::regTermTest(model = fit,
-                                         test.terms = "exposure",
-                                         null = NULL,
-                                         df = Inf,
-                                         method = "Wald")$p
-    }
-    else{
+    }else{
       
       fit <- lm(formula = formula.ewas, data = covariates)
       
       Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
       
-      Estimate <- summary(fit)$coefficients["exposure", "Estimate"]
-      
-      #### Calculate p-value using Wald test 
-      raw_p_value <- survey::regTermTest(model = fit,
-                                        test.terms = "exposure",
-                                        null = NULL,
-                                        df = Inf,
-                                        method = "Wald")$p
+      Estimate <- summary(fit)$coefficients["exposure", "Estimate"] %>% as.numeric()
       
     }
     
     #--------------------------------------------------------------------------#
     ## Compute estimates
     
+    #### Calculate p-value using Wald test 
+    raw_p_value <- survey::regTermTest(model = fit,
+                                       test.terms = "exposure",
+                                       null = NULL,
+                                       df = Inf,
+                                       method = "Wald")$p
+    
     ### Calculate 95% CIs
     suppressMessages(
-      CIs <- stats::confint(object = fit, parm = "exposure", level = 0.95) %>%
+      CIs <- stats::confint.default(object = fit, 
+                            parm = "exposure", level = 0.95) %>%
         as.data.frame() %>%
         dplyr::rename(conf_low = `2.5 %`, conf_high = `97.5 %`)
     )
     
     ### Standard errors
-    SE <- summary(fit)$coefficients[exposure, "Std. Error"]
+    SE <- summary(fit)$coefficients["exposure", "Std. Error"] %>% as.numeric()
     
     sfit <- cbind(Estimate, SE, CIs, raw_p_value = raw_p_value)
     
     if( transformToMvalue ){
       # Return adjusted regression coefficient in terms of beta values
-      MeanBeta <- m2beta(Intercept+Estimate)-m2beta(Intercept)
+      MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
       sfit <- cbind(MeanBeta, sfit)
     }
     
@@ -212,7 +207,7 @@ LocusWiseTwoStageMLM <- function(meth_data,
         clinical_confounders = clinical_confounders,
         technical_confounders = technical_confounders,
         transformToMvalue = transformToMvalue,
-        robust = robust,
+        robust = robust
       )
       
       # Transform results for an exposure into a data frame
