@@ -6,7 +6,7 @@
 #' Run robust linear regression for methylation at specific loci ~ exposures
 #'
 #' @param CpG A numeric vector containing methylation data from 1 CpG
-#' @param covariate_data A data.frame containing all variables needed for regression (exposures and confounders)
+#' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param exposures A character string with the exposure name(s)
 #' @param clinical_confounders A character vector containing names of the confounders
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
@@ -21,7 +21,7 @@
 
 multiRobustLinearRegression <-
   function(CpG,
-           covariate_data,
+           covariates,
            exposures,
            clinical_confounders = 0,
            technical_confounders = 0,
@@ -41,10 +41,10 @@ multiRobustLinearRegression <-
     # Change ID to rownames so covariates can be merged with methylation dataset
     CpG <- data.frame(id = rownames(CpG), CpG)
     
-    if(!("id" %in% colnames(covariate_data)))  covariate_data <- data.frame(id = rownames(covariate_data), covariate_data)
+    if(!("id" %in% colnames(covariates)))  covariates <- data.frame(id = rownames(covariates), covariates)
     
     # Create a subset of data containing methylation data of one CpG (y) and exposure-covariates data (x)
-    data <- merge(x = covariate_data, y = CpG, by = "id")
+    data <- merge(x = covariates, y = CpG, by = "id")
     
     # Create regression formula
     formula <-
@@ -74,13 +74,12 @@ multiRobustLinearRegression <-
 #' exposure: methylation ~ exposure1 + exposure2 + exposure3 + W + epsilon
 #'
 #' @param meth_data A matrix containing methylation data, CpG in rows.
-#' @param covariate_data A data.frame containing all variables needed for regression (exposures and confounders)
+#' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param clinical_confounders A character vector containing names of the confounders
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
 #' @param exposures A character vector naming the exposures
-#' @param expo_labels A character vector containing full names of exposures
+#' @param study_name A name for the study.
 #' @param transformToMvalue Boolean: whether input data should be transformed to Mvalue (ie: logit transformation)
-#' 
 #' @param maxit The number of iterations for each robust regression
 #' @param path Path for saving the result file
 #' @param file_name File name without extension
@@ -97,19 +96,18 @@ multiRobustLinearRegression <-
 #' @importFrom foreach registerDoSEQ
 #' @importFrom tibble rownames_to_column
 #' @importFrom data.table fwrite
-#' @importFrom bigstatsr nb_cores
 #'
 
 LocusWiseMultiRLM <-
   function(meth_data,
-           covariate_data,
+           covariates,
            exposures,
+           study_name,
            clinical_confounders,
            technical_confounders,
-           exp_label,
            transformToMvalue = FALSE,
            maxit,
-           ncores = bigstatsr::nb_cores(),
+           ncores = 1,
            path,
            file_name){
 
@@ -144,7 +142,7 @@ LocusWiseMultiRLM <-
         X = meth_data,
         MARGIN = 1,
         FUN = multiRobustLinearRegression,
-        covariate_data = covariate_data,
+        covariates = covariates,
         exposures = exposures,
         clinical_confounders = clinical_confounders,
         technical_confounders = technical_confounders,
@@ -159,7 +157,7 @@ LocusWiseMultiRLM <-
       tibble::rownames_to_column("CpG")
     
     cat("Saving results...")
-    saveRDS(result_loci_regr_df, file = here::here(path, paste0(file_name, ".", exp_label, ".rds")))
+    saveRDS(result_loci_regr_df, file = here::here(path, paste0(file_name, ".", study_name, ".rds")))
     
     # 4.Save the confounders set and the technical confounders set to a file
     data.table::fwrite(list(clinical_confounders),

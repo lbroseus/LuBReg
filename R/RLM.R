@@ -57,7 +57,7 @@ RLM <- function(CpG,
       paste(technical_confounders, collapse = " + ")
     ))
   
-  # Fit the robust linear regression for one exposure at a time
+  # Fit the robust linear regression
   fit <- MASS::rlm(formula = formula, data = data, maxit = maxit)
   
   #--------------------------------------------------------------------------#
@@ -76,16 +76,16 @@ RLM <- function(CpG,
     dplyr::rename(conf_low = `2.5 %`, conf_high = `97.5 %`)
   
   # Obtain standard error of the estimate
-  SE <- summary(fit)$coefficients["exposure", "Std. Error"]
+  SE <- summary(fit)$coefficients[exposure, "Std. Error"]
   
   # Obtain estimate
-  Estimate <- fit$coefficients["exposure"]
+  Estimate <- fit$coefficients[exposure]
   
   sfit <- cbind(Estimate, SE, CIs, raw_p_value = as.numeric(wald$p))
   
   if( transformToMvalue ){
     
-    Intercept <- fit$coefficients["(Intercept)", "Estimate"]
+    Intercept <- fit$coefficients["(Intercept)"]
     
     MeanBeta <- m2beta(Intercept+Estimate) - m2beta(Intercept)
     
@@ -165,7 +165,7 @@ LocusWiseRLM <-
         cl = cl,
         X = meth_data,
         MARGIN = 1,
-        FUN = LocusWiseRLM,
+        FUN = RLM,
         exposure = exposures[i],
         covariates = covariates,
         clinical_confounders = clinical_confounders,
