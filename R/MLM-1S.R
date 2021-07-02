@@ -178,8 +178,8 @@ myMLRegressionLoci.Wald <-
 #' Results of the mixed linear regressions for mean methylation level in function of repeated exposure measurements
 #'
 #' @param meth_data A matrix containing methylation data (samples in columns).
-#' @param exposures A character vector naming the exposures.
 #' @param covariates A data.frame containing all variables needed for regression (exposures and confounders).
+#' @param exposures A character vector naming the exposures.
 #' @param clinical_confounders A character vector containing names of the confounders.
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted for.
 #' @param transformToMvalue Boolean: whether input data should be transformed to Mvalue.
@@ -209,10 +209,9 @@ LocusWiseLME <-
            technical_confounders,
            transformToMvalue = FALSE,
            method = "Wald",
-           ncores = 1,
-           expo_labels,
            path,
-           file_name){
+           file_name,
+           ncores = 1){
     
     # Check input parameters
     if(!method %in% c("Wald", "LRT")) stop("method must be either 'Wald' or 'LRT'")
