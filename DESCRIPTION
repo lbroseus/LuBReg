@@ -1,14 +1,14 @@
 Package: LuBReg
 Title: This package provides several R functions for computing linear regressions
-Version: 0.0.0.9000
+Version: 0.1
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Lucile",
+           family = "Broséus",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
+           email = "lucile.broseus@example.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Imports: MASS, lme4, sjPlot,
-    dplyr, magrittr, minfi, interactions,
+    dplyr, magrittr, interactions,
     stats, utils, survey, data.table, broom
 Description: Several linear regression models.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
