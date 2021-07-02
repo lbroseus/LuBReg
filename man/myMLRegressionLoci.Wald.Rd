@@ -9,7 +9,7 @@ myMLRegressionLoci.Wald(
   CpG,
   exposure,
   covariates,
-  confounders = 0,
+  clinical_confounders = 0,
   technical_confounders = 0,
   transformToMvalue = transformToMvalue
 )
@@ -21,7 +21,7 @@ myMLRegressionLoci.Wald(
 
 \item{covariates}{A data.frame containing all variables needed for regression (exposures and confounders)}
 
-\item{confounders}{A character vector containing names of the confounders}
+\item{clinical_confounders}{A character vector defining clinical confounders the regression will be adjusted to}
 
 \item{technical_confounders}{A character vector defining technical confounders the regression will be adjusted to}
 }
