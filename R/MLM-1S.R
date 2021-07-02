@@ -4,9 +4,9 @@
 #'
 #' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param exposure A character string with the exposure name
+#' @param clinical_confounders A character vector defining clinical confounders the regression will be adjusted to
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
-#' @param CpG A numeric vector containing methylation data from 1 CpG
-#' @param confounders A character vector containing names of the confounders
+#' @param CpG A numeric vector containing methylation data from one CpG position.
 #'
 #' @importFrom stats as.formula p.adjust sd
 #' @importFrom lme4 lmer
@@ -18,7 +18,7 @@ myMLRegressionLoci.LRT <-
   function(CpG,
            exposure,
            covariates,
-           confounders = 0,
+           clinical_confounders = 0,
            technical_confounders = 0,
            transformToMvalue = transformToMvalue) {
     
@@ -43,7 +43,7 @@ myMLRegressionLoci.LRT <-
     formula0 <-
       stats::as.formula(paste(
         exposure, " ~ ",
-        paste(confounders, collapse = " + "),
+        paste(clinical_confounders, collapse = " + "),
         "+",
         paste(technical_confounders, collapse = " + "),
         " + (1 | id)"
@@ -55,7 +55,7 @@ myMLRegressionLoci.LRT <-
         exposure, " ~ ",
         " y ",
         "+",
-        paste(confounders, collapse = " + "),
+        paste(clinical_confounders, collapse = " + "),
         "+",
         paste(technical_confounders, collapse = " + "),
         " + (1 | id)"
@@ -97,9 +97,9 @@ myMLRegressionLoci.LRT <-
 #'
 #' @param covariates A data.frame containing all variables needed for regression (exposures and confounders)
 #' @param exposure A character string with the exposure name
+#' @param clinical_confounders A character vector defining clinical confounders the regression will be adjusted to
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
 #' @param CpG A numeric vector containing methylation data from 1 CpG
-#' @param confounders A character vector containing names of the confounders
 #'
 #' @importFrom stats as.formula p.adjust sd
 #' @importFrom lme4 lmer
@@ -111,7 +111,7 @@ myMLRegressionLoci.Wald <-
   function(CpG,
            exposure,
            covariates,
-           confounders = 0,
+           clinical_confounders = 0,
            technical_confounders = 0,
            transformToMvalue = transformToMvalue) {
     
@@ -138,7 +138,7 @@ myMLRegressionLoci.Wald <-
         exposure, " ~ ",
         " y ",
         "+",
-        paste(confounders, collapse = " + "),
+        paste(clinical_confounders, collapse = " + "),
         "+",
         paste(technical_confounders, collapse = " + "),
         " + (1 | id)"
