@@ -11,7 +11,8 @@
 #' @param maxit The number of iterations for each robust regression
 
 #' @importFrom stats as.formula p.adjust sd
-#' @importFrom lme4 lmer ranef
+#' @importFrom lmerTest lmer 
+#' @importFrom lme4 ranef
 #' @importFrom survey regTermTest
 #' @importFrom dplyr filter distinct
 #'
@@ -55,7 +56,7 @@ twoStageMLM <- function(CpG,
     ### ML regression formula: exposure ~ 1 + (1 | id)
     formula.repeat <- stats::as.formula(paste(exposure, " ~ (1 | id)"))
     ### Fit mixed linear model
-    fit <- lme4::lmer(formula = formula.repeat, data = covariates)
+    fit <- lmerTest::lmer(formula = formula.repeat, data = covariates)
     ### Gather fixed and random effects
     fixed <- as.vector(summary(fit)$coefficients["(Intercept)","Estimate"])
     random <- lme4::ranef(fit)$id

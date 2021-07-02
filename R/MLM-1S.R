@@ -8,8 +8,8 @@
 #' @param technical_confounders A character vector defining technical confounders the regression will be adjusted to
 #' @param CpG A numeric vector containing methylation data from one CpG position.
 #'
-#' @importFrom stats as.formula p.adjust sd
-#' @importFrom lme4 lmer
+#' @importFrom stats as.formula sd
+#' @importFrom lmerTest lmer
 #' @importFrom dplyr filter
 #'
 #' @return A named vector of p values for regressions for each CpG
@@ -39,18 +39,7 @@ myMLRegressionLoci.LRT <-
     data <- merge(x = covariates, y = CpG, by = "id")
     data <- dplyr::filter(data, !is.na(y))
     
-    # Create regression formula
-    formula0 <-
-      stats::as.formula(paste(
-        exposure, " ~ ",
-        paste(clinical_confounders, collapse = " + "),
-        "+",
-        paste(technical_confounders, collapse = " + "),
-        " + (1 | id)"
-      ))
-    fit0 <- lme4::lmer(formula = formula0, data = data, REML = FALSE)
-    
-    formula1 <-
+    formula <-
       stats::as.formula(paste(
         exposure, " ~ ",
         " y ",
@@ -60,23 +49,23 @@ myMLRegressionLoci.LRT <-
         paste(technical_confounders, collapse = " + "),
         " + (1 | id)"
       ))
-    fit1 <- lme4::lmer(formula = formula1, data = data, REML = FALSE)
+    fit <- lmerTest::lmer(formula = formula1, data = data)
     
     # Calculate CIs
     suppressMessages(
-      CIs <- stats::confint(object = fit1, parm = "y", level = 0.95) %>%
+      CIs <- stats::confint(object = fit, parm = "y", level = 0.95) %>%
         as.data.frame() %>%
         dplyr::rename(conf_low = `2.5 %`, conf_high = `97.5 %`)
     )
     
     # Obtain estimate
-    Estimate <- summary(fit1)$coefficients["y", "Estimate"]
+    Estimate <- summary(fit)$coefficients["y", "Estimate"]
     
     # Obtain standard error of the estimate
-    SE <- summary(fit1)$coefficients["y", "Std. Error"]
+    SE <- summary(fit)$coefficients["y", "Std. Error"]
     
-    LRT <- anova(fit0,fit1)
-    pval <- as.numeric(LRT$`Pr(>Chisq)`[2])
+    # pval using LRT+anova
+    pval <- anova(fit)["y","Pr(>F)"]
     
     # Combine estimates, CIs and p values
     sfit <-
@@ -89,7 +78,7 @@ myMLRegressionLoci.LRT <-
     
     if( transformToMvalue ){
       # Return adjusted regression coefficient in terms of beta values
-      Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
+      Intercept <- summary(fit1)$coefficients["(Intercept)", "Estimate"]
       MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
       sfit <- cbind(MeanBeta, sfit)
     }
@@ -109,7 +98,7 @@ myMLRegressionLoci.LRT <-
 #' @param CpG A numeric vector containing methylation data from 1 CpG
 #'
 #' @importFrom stats as.formula p.adjust sd
-#' @importFrom lme4 lmer
+#' @importFrom lmerTest lmer
 #' @importFrom dplyr filter
 #'
 #' @return A named vector of p values for regressions for each CpG
@@ -150,7 +139,7 @@ myMLRegressionLoci.Wald <-
         paste(technical_confounders, collapse = " + "),
         " + (1 | id)"
       ))
-    fit <- lme4::lmer(formula = formula, data = data, REML = FALSE)
+    fit <- lmerTest::lmer(formula = formula, data = data)
     
     # Calculate CIs
     suppressMessages(
@@ -165,8 +154,7 @@ myMLRegressionLoci.Wald <-
     # Obtain standard error of the estimate
     SE <- summary(fit)$coefficients["y", "Std. Error"]
     
-    pval <- survey::regTermTest(model = fit, test.terms = "y", 
-                                null = NULL, df = Inf, method = "Wald")
+    pval <- summary(fit)$coefficients["y", "Pr(>|t|)"]
     
     # Combine estimates, CIs and p values
     sfit <-

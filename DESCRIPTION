@@ -7,7 +7,7 @@ Authors@R:
            role = c("aut", "cre"),
            email = "lucile.broseus@example.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Imports: MASS, lme4, sjPlot,
+Imports: MASS, lme4, lmerTest, sjPlot,
     dplyr, magrittr, interactions,
     stats, utils, survey, data.table, broom
 Description: Several linear regression models.
