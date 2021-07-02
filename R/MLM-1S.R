@@ -87,6 +87,13 @@ myMLRegressionLoci.LRT <-
         raw_p_value = pval
       )
     
+    if( transformToMvalue ){
+      # Return adjusted regression coefficient in terms of beta values
+      Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
+      MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
+      sfit <- cbind(MeanBeta, sfit)
+    }
+    
     return(sfit)
   }
 ################################################################################
@@ -143,7 +150,7 @@ myMLRegressionLoci.Wald <-
         paste(technical_confounders, collapse = " + "),
         " + (1 | id)"
       ))
-    fit <- lme4::lmer(formula = formula1, data = data, REML = FALSE)
+    fit <- lme4::lmer(formula = formula, data = data, REML = FALSE)
     
     # Calculate CIs
     suppressMessages(
@@ -152,7 +159,7 @@ myMLRegressionLoci.Wald <-
         dplyr::rename(conf_low = `2.5 %`, conf_high = `97.5 %`)
     )
     
-    # Obtain estimate
+    # Obtain estimates
     Estimate <- summary(fit)$coefficients["y", "Estimate"]
     
     # Obtain standard error of the estimate
@@ -169,6 +176,13 @@ myMLRegressionLoci.Wald <-
         CIs,
         raw_p_value = pval
       )
+    
+    if( transformToMvalue ){
+      # Return adjusted regression coefficient in terms of beta values
+      Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
+      MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
+      sfit <- cbind(MeanBeta, sfit)
+    }
     
     return(sfit)
   }
