@@ -49,7 +49,7 @@ myMLRegressionLoci.LRT <-
         paste(technical_confounders, collapse = " + "),
         " + (1 | id)"
       ))
-    fit <- lmerTest::lmer(formula = formula1, data = data)
+    fit <- lmerTest::lmer(formula = formula, data = data)
     
     # Calculate CIs
     suppressMessages(
@@ -78,7 +78,7 @@ myMLRegressionLoci.LRT <-
     
     if( transformToMvalue ){
       # Return adjusted regression coefficient in terms of beta values
-      Intercept <- summary(fit1)$coefficients["(Intercept)", "Estimate"]
+      Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
       MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
       sfit <- cbind(MeanBeta, sfit)
     }
@@ -293,7 +293,7 @@ LocusWiseLME <-
     
     # 4. Save the confounders set and the technical confounders set to a file
     data.table::fwrite(list(clinical_confounders),
-                       file = here::here(path, paste0(file_name, "clinical_confounders.txt")))
+                       file = here::here(path, paste0(file_name, "_clinical_confounders.txt")))
     data.table::fwrite(list(technical_confounders),
                        file = here::here(path, paste0(file_name, "_technical_confounders.txt")))
     
