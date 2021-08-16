@@ -22,6 +22,9 @@ myMLRegressionLoci.LRT <-
            technical_confounders = 0,
            transformToMvalue = transformToMvalue) {
     
+    mean_value <- mean(CpG, na.rm = TRUE)
+    median_value <- median(CpG, na.rm = TRUE)
+    
     if( transformToMvalue & max(CpG, na.rm = T)<1 & min(CpG, na.rm = T)>0){
       CpG <- logit2(CpG)
     }
@@ -73,15 +76,17 @@ myMLRegressionLoci.LRT <-
         Estimate,
         SE,
         CIs,
-        raw_p_value = pval
+        raw_p_value = pval,
+        mean_value,
+        median_value
       )
     
-    if( transformToMvalue ){
-      # Return adjusted regression coefficient in terms of beta values
-      Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
-      MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
-      sfit <- cbind(MeanBeta, sfit)
-    }
+    #if( transformToMvalue ){
+    #  # Return adjusted regression coefficient in terms of beta values
+    #  Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
+    #  MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
+    #  sfit <- cbind(MeanBeta, sfit)
+    #}
     
     return(sfit)
   }
@@ -110,6 +115,11 @@ myMLRegressionLoci.Wald <-
            clinical_confounders = 0,
            technical_confounders = 0,
            transformToMvalue = transformToMvalue) {
+    
+    mean_value <- mean(CpG, na.rm = TRUE)
+    median_value <- median(CpG, na.rm = TRUE)
+    min_value <- min(CpG, na.rm = TRUE)
+    max_value <- max(CpG, na.rm = TRUE)
     
     if( transformToMvalue & max(CpG, na.rm = T)<1 & min(CpG, na.rm = T)>0){
       CpG <- logit2(CpG)
@@ -162,15 +172,16 @@ myMLRegressionLoci.Wald <-
         Estimate,
         SE,
         CIs,
-        raw_p_value = pval
+        raw_p_value = pval,
+        mean_value, median_value, min_value,  max_value
       )
     
-    if( transformToMvalue ){
-      # Return adjusted regression coefficient in terms of beta values
-      Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
-      MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
-      sfit <- cbind(MeanBeta, sfit)
-    }
+    #if( transformToMvalue ){
+    #  # Return adjusted regression coefficient in terms of beta values
+    #  Intercept <- summary(fit)$coefficients["(Intercept)", "Estimate"]
+    #  MeanBeta <- as.numeric(m2beta(Intercept+Estimate)-m2beta(Intercept))
+    #  sfit <- cbind(MeanBeta, sfit)
+    #}
     
     return(sfit)
   }
